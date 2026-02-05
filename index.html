@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWR Nuclear Reactor Simulator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800&display=block" rel="stylesheet">
+    <style>
+        /* Prevent layout shift while fonts load */
+        .plant-title, .badge-text, .status-text, .clock-value, .power-value {
+            font-synthesis: none;
+        }
+    </style>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="simulator-container">
+        <!-- Header Panel -->
+        <header class="control-header">
+            <div class="header-left">
+                <div class="reactor-badge">
+                    <span class="badge-icon">⚛</span>
+                    <span class="badge-text">PWR-1000</span>
+                </div>
+                <h1 class="plant-title">PRESSURIZED WATER REACTOR</h1>
+                <p class="plant-subtitle">Educational Simulation System</p>
+            </div>
+            <div class="header-center">
+                <div class="master-status" id="masterStatus">
+                    <div class="status-indicator online"></div>
+                    <span class="status-text">REACTOR ONLINE</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="clock-display">
+                    <span class="clock-label">SIM TIME</span>
+                    <span class="clock-value" id="simClock">00:00:00</span>
+                </div>
+                <div class="power-display">
+                    <span class="power-label">THERMAL OUTPUT</span>
+                    <span class="power-value"><span id="thermalPower">2850</span> MWt</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Schematic Area -->
+        <main class="schematic-area">
+            <!-- SVG Schematic -->
+            <svg class="reactor-schematic" viewBox="0 0 1400 800" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <!-- Gradients -->
+                    <linearGradient id="vesselGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#2a3a4a"/>
+                        <stop offset="30%" style="stop-color:#3d5a6a"/>
+                        <stop offset="70%" style="stop-color:#3d5a6a"/>
+                        <stop offset="100%" style="stop-color:#2a3a4a"/>
+                    </linearGradient>
+                    <linearGradient id="steamGenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#3a4a5a"/>
+                        <stop offset="50%" style="stop-color:#4d6a7a"/>
+                        <stop offset="100%" style="stop-color:#3a4a5a"/>
+                    </linearGradient>
+                    <linearGradient id="hotWaterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#ff6b35"/>
+                        <stop offset="100%" style="stop-color:#ff8c42"/>
+                    </linearGradient>
+                    <linearGradient id="coldWaterGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#4dabf7"/>
+                        <stop offset="100%" style="stop-color:#74c0fc"/>
+                    </linearGradient>
+                    <linearGradient id="steamGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                        <stop offset="0%" style="stop-color:#adb5bd"/>
+                        <stop offset="100%" style="stop-color:#e9ecef"/>
+                    </linearGradient>
+                    <linearGradient id="fuelGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#ffd43b"/>
+                        <stop offset="50%" style="stop-color:#ff922b"/>
+                        <stop offset="100%" style="stop-color:#e03131"/>
+                    </linearGradient>
+
+                    <!-- Glow filters -->
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    <filter id="strongGlow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+
+                    <!-- Patterns -->
+                    <pattern id="gridPattern" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1a2a3a" stroke-width="0.5"/>
+                    </pattern>
+                    <pattern id="fuelPattern" width="8" height="8" patternUnits="userSpaceOnUse">
+                        <rect width="8" height="8" fill="#1a1a2e"/>
+                        <circle cx="4" cy="4" r="2.5" fill="#ff922b" opacity="0.8"/>
+                    </pattern>
+                </defs>
+
+                <!-- Background Grid -->
+                <rect width="100%" height="100%" fill="url(#gridPattern)"/>
+
+                <!-- Labels -->
+                <text x="700" y="35" class="section-label" text-anchor="middle">PRIMARY COOLANT SYSTEM</text>
+
+                <!-- ==================== REACTOR VESSEL ==================== -->
+                <g class="reactor-vessel" transform="translate(150, 120)">
+                    <!-- Vessel Label -->
+                    <text x="100" y="-20" class="component-label" text-anchor="middle">REACTOR VESSEL</text>
+
+                    <!-- Vessel Outer Shell -->
+                    <path d="M 30 50
+                             Q 30 20, 60 10
+                             L 140 10
+                             Q 170 20, 170 50
+                             L 170 480
+                             Q 170 520, 130 530
+                             L 70 530
+                             Q 30 520, 30 480
+                             Z"
+                          fill="url(#vesselGradient)"
+                          stroke="#5a7a8a"
+                          stroke-width="3"/>
+
+                    <!-- Vessel Head (Removable) -->
+                    <path d="M 35 50 L 35 70 L 165 70 L 165 50 Q 165 25, 140 15 L 60 15 Q 35 25, 35 50"
+                          fill="#4a5a6a" stroke="#6a8a9a" stroke-width="2"/>
+                    <line x1="35" y1="70" x2="165" y2="70" stroke="#6a8a9a" stroke-width="2" stroke-dasharray="5,3"/>
+
+                    <!-- Control Rod Drive Mechanisms (top) -->
+                    <g class="crdm-assembly">
+                        <rect x="55" y="-40" width="12" height="55" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="1"/>
+                        <rect x="75" y="-40" width="12" height="55" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="1"/>
+                        <rect x="95" y="-40" width="12" height="55" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="1"/>
+                        <rect x="115" y="-40" width="12" height="55" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="1"/>
+                        <rect x="135" y="-40" width="12" height="55" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="1"/>
+                        <text x="100" y="-50" class="small-label" text-anchor="middle">CRDM</text>
+                    </g>
+
+                    <!-- Core Barrel -->
+                    <rect x="45" y="90" width="110" height="350" fill="#2a3a4a" stroke="#4a6a7a" stroke-width="2" rx="5"/>
+
+                    <!-- Fuel Assembly Zone -->
+                    <g class="fuel-zone">
+                        <rect x="55" y="120" width="90" height="280" fill="url(#fuelPattern)" stroke="#ff922b" stroke-width="1"/>
+
+                        <!-- Fuel Channel Indicators -->
+                        <g class="fuel-channels">
+                            <!-- Row indicators -->
+                            <line x1="55" y1="155" x2="145" y2="155" stroke="#ff922b" stroke-width="0.5" opacity="0.5"/>
+                            <line x1="55" y1="190" x2="145" y2="190" stroke="#ff922b" stroke-width="0.5" opacity="0.5"/>
+                            <line x1="55" y1="225" x2="145" y2="225" stroke="#ff922b" stroke-width="0.5" opacity="0.5"/>
+                            <line x1="55" y1="260" x2="145" y2="260" stroke="#ff922b" stroke-width="0.5" opacity="0.5"/>
+                            <line x1="55" y1="295" x2="145" y2="295" stroke="#ff922b" stroke-width="0.5" opacity="0.5"/>
+                            <line x1="55" y1="330" x2="145" y2="330" stroke="#ff922b" stroke-width="0.5" opacity="0.5"/>
+                            <line x1="55" y1="365" x2="145" y2="365" stroke="#ff922b" stroke-width="0.5" opacity="0.5"/>
+                        </g>
+
+                        <!-- Control Rods (animated) -->
+                        <g class="control-rods" id="controlRods">
+                            <rect class="control-rod" x="62" y="80" width="6" height="120" fill="#1a1a2e" stroke="#4a5a6a" stroke-width="1" id="rod1"/>
+                            <rect class="control-rod" x="82" y="80" width="6" height="120" fill="#1a1a2e" stroke="#4a5a6a" stroke-width="1" id="rod2"/>
+                            <rect class="control-rod" x="102" y="80" width="6" height="120" fill="#1a1a2e" stroke="#4a5a6a" stroke-width="1" id="rod3"/>
+                            <rect class="control-rod" x="122" y="80" width="6" height="120" fill="#1a1a2e" stroke="#4a5a6a" stroke-width="1" id="rod4"/>
+                            <rect class="control-rod" x="137" y="80" width="6" height="120" fill="#1a1a2e" stroke="#4a5a6a" stroke-width="1" id="rod5"/>
+                        </g>
+
+                        <!-- Core glow effect -->
+                        <rect x="55" y="120" width="90" height="280" fill="none" stroke="#ff6b35" stroke-width="3" class="core-glow"/>
+
+                        <text x="100" y="265" class="zone-label" text-anchor="middle">FUEL</text>
+                        <text x="100" y="280" class="zone-label" text-anchor="middle">ASSEMBLIES</text>
+                    </g>
+
+                    <!-- Lower Plenum -->
+                    <path d="M 45 440 L 45 470 Q 45 500, 75 510 L 125 510 Q 155 500, 155 470 L 155 440"
+                          fill="#2a3a4a" stroke="#4a6a7a" stroke-width="1"/>
+                    <text x="100" y="490" class="tiny-label" text-anchor="middle">LOWER PLENUM</text>
+
+                    <!-- Inlet/Outlet Nozzles - Both above core level for safety -->
+                    <rect x="165" y="100" width="40" height="25" fill="#3a4a5a" stroke="#ff8c42" stroke-width="2" rx="3"/>
+                    <text x="185" y="90" class="tiny-label" text-anchor="middle">HOT LEG</text>
+
+                    <rect x="165" y="140" width="40" height="25" fill="#3a4a5a" stroke="#4dabf7" stroke-width="2" rx="3"/>
+                    <text x="185" y="180" class="tiny-label" text-anchor="middle">COLD LEG</text>
+                </g>
+
+                <!-- ==================== PRIMARY LOOP PIPING ==================== -->
+                <g class="primary-piping">
+                    <!-- Hot Leg (from reactor to steam generator inlet) -->
+                    <g class="hot-leg">
+                        <!-- Main hot leg pipe: reactor outlet to SG inlet -->
+                        <path d="M 355 232
+                                 L 420 232
+                                 Q 440 232, 440 252
+                                 L 440 295
+                                 Q 440 315, 460 315
+                                 L 480 315"
+                              fill="none" stroke="url(#hotWaterGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Flow indicator -->
+                        <path d="M 355 232 L 420 232 Q 440 232, 440 252 L 440 295 Q 440 315, 460 315 L 480 315"
+                              fill="none" stroke="#ff8c42" stroke-width="2" stroke-dasharray="10,5" class="flow-indicator hot-flow"/>
+                        <!-- Flow direction arrow -->
+                        <polygon points="390,222 405,232 390,242" fill="#fff" opacity="0.8"/>
+                    </g>
+
+                    <!-- Pressurizer Surge Line (connects to hot leg) -->
+                    <g class="surge-line">
+                        <path d="M 440 270
+                                 L 620 270
+                                 Q 640 270, 640 250
+                                 L 640 230"
+                              fill="none" stroke="url(#hotWaterGradient)" stroke-width="12" stroke-linecap="round"/>
+                        <text x="530" y="260" class="tiny-label" text-anchor="middle">SURGE LINE</text>
+                    </g>
+
+                    <!-- Cold Leg (from SG outlet through RCP back to reactor) -->
+                    <g class="cold-leg">
+                        <!-- SG outlet down to pump -->
+                        <path d="M 530 580
+                                 L 530 620
+                                 Q 530 640, 510 640
+                                 L 430 640"
+                              fill="none" stroke="url(#coldWaterGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+                        <!-- Through pump area -->
+                        <path d="M 430 640
+                                 L 400 640"
+                              fill="none" stroke="url(#coldWaterGradient)" stroke-width="18" stroke-linecap="round"/>
+
+                        <!-- Pump to reactor - routed OUTSIDE the reactor vessel on the right side -->
+                        <path d="M 340 640
+                                 L 340 280
+                                 Q 340 260, 355 260"
+                              fill="none" stroke="url(#coldWaterGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+                        <!-- Flow indicators -->
+                        <path d="M 530 580 L 530 620 Q 530 640, 510 640 L 400 640"
+                              fill="none" stroke="#74c0fc" stroke-width="2" stroke-dasharray="10,5" class="flow-indicator cold-flow"/>
+                        <path d="M 340 640 L 340 280 Q 340 260, 355 260"
+                              fill="none" stroke="#74c0fc" stroke-width="2" stroke-dasharray="10,5" class="flow-indicator cold-flow"/>
+
+                        <!-- Flow direction arrows -->
+                        <polygon points="470,630 470,650 455,640" fill="#fff" opacity="0.8"/>
+                        <polygon points="330,450 340,435 350,450" fill="#fff" opacity="0.8"/>
+                    </g>
+
+                    <!-- Primary Coolant Pump (positioned in cold leg) -->
+                    <g class="coolant-pump" transform="translate(340, 605)">
+                        <circle cx="30" cy="35" r="38" fill="#2a3a4a" stroke="#5a7a8a" stroke-width="3"/>
+                        <circle cx="30" cy="35" r="26" fill="#1a2a3a" stroke="#4a6a7a" stroke-width="2"/>
+                        <g class="pump-impeller" id="pumpImpeller">
+                            <line x1="30" y1="14" x2="30" y2="56" stroke="#6a8a9a" stroke-width="3"/>
+                            <line x1="9" y1="35" x2="51" y2="35" stroke="#6a8a9a" stroke-width="3"/>
+                            <line x1="15" y1="20" x2="45" y2="50" stroke="#6a8a9a" stroke-width="3"/>
+                            <line x1="45" y1="20" x2="15" y2="50" stroke="#6a8a9a" stroke-width="3"/>
+                        </g>
+                        <text x="30" y="88" class="small-label" text-anchor="middle">RCP</text>
+                    </g>
+                </g>
+
+                <!-- ==================== STEAM GENERATOR ==================== -->
+                <g class="steam-generator" transform="translate(460, 80)">
+                    <!-- SG Label -->
+                    <text x="70" y="-10" class="component-label" text-anchor="middle">STEAM GENERATOR</text>
+
+                    <!-- Upper Shell (Steam Dome) -->
+                    <path d="M 20 30
+                             Q 20 0, 50 0
+                             L 90 0
+                             Q 120 0, 120 30
+                             L 120 100
+                             L 20 100
+                             Z"
+                          fill="url(#steamGenGradient)"
+                          stroke="#5a7a8a"
+                          stroke-width="3"/>
+
+                    <!-- Steam Outlet -->
+                    <rect x="50" y="-30" width="40" height="35" fill="#4a5a6a" stroke="#6a8a9a" stroke-width="2" rx="3"/>
+                    <text x="70" y="-40" class="tiny-label" text-anchor="middle">TO TURBINE</text>
+
+                    <!-- Steam Separators/Dryers -->
+                    <rect x="30" y="40" width="80" height="20" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="1" rx="3"/>
+                    <text x="70" y="54" class="tiny-label" text-anchor="middle" fill="#8aa">DRYERS</text>
+                    <rect x="30" y="70" width="80" height="20" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="1" rx="3"/>
+                    <text x="70" y="84" class="tiny-label" text-anchor="middle" fill="#8aa">SEPARATORS</text>
+
+                    <!-- Lower Shell (Tube Bundle) -->
+                    <path d="M 20 100
+                             L 20 450
+                             Q 20 490, 50 500
+                             L 90 500
+                             Q 120 490, 120 450
+                             L 120 100
+                             Z"
+                          fill="url(#steamGenGradient)"
+                          stroke="#5a7a8a"
+                          stroke-width="3"/>
+
+                    <!-- Tube Bundle Region -->
+                    <rect x="30" y="120" width="80" height="320" fill="#2a3a4a" stroke="#4a6a7a" stroke-width="1" rx="5"/>
+
+                    <!-- U-Tubes visualization -->
+                    <g class="u-tubes" opacity="0.7">
+                        <path d="M 40 220 L 40 400 Q 40 420, 55 420 Q 70 420, 70 400 L 70 220" fill="none" stroke="#ff8c42" stroke-width="3"/>
+                        <path d="M 50 220 L 50 390 Q 50 410, 65 410 Q 80 410, 80 390 L 80 220" fill="none" stroke="#ff8c42" stroke-width="3"/>
+                        <path d="M 60 220 L 60 380 Q 60 400, 75 400 Q 90 400, 90 380 L 90 220" fill="none" stroke="#ff8c42" stroke-width="3"/>
+                        <path d="M 70 220 L 70 370 Q 70 390, 85 390 Q 100 390, 100 370 L 100 220" fill="none" stroke="#ff8c42" stroke-width="3"/>
+                    </g>
+
+                    <!-- Secondary Water Level -->
+                    <rect x="30" y="280" width="80" height="160" fill="#4dabf7" opacity="0.3" class="secondary-water"/>
+
+                    <!-- Steam bubbles animation area -->
+                    <g class="steam-bubbles" id="steamBubbles">
+                        <!-- Bubbles will be animated with CSS/JS -->
+                    </g>
+
+                    <text x="70" y="180" class="zone-label" text-anchor="middle">TUBE</text>
+                    <text x="70" y="195" class="zone-label" text-anchor="middle">BUNDLE</text>
+
+                    <!-- Tube Sheet -->
+                    <rect x="20" y="210" width="100" height="15" fill="#4a5a6a" stroke="#6a8a9a" stroke-width="1"/>
+                    <text x="70" y="222" class="tiny-label" text-anchor="middle" fill="#aaa">TUBESHEET</text>
+
+                    <!-- Primary Inlet (hot leg enters here - left side near tubesheet) -->
+                    <rect x="-25" y="225" width="50" height="22" fill="#3a4a5a" stroke="#ff8c42" stroke-width="2" rx="3"/>
+                    <text x="0" y="260" class="tiny-label" text-anchor="middle">PRIMARY IN</text>
+
+                    <!-- Primary Outlet (cold leg exits here - bottom) -->
+                    <rect x="55" y="495" width="30" height="25" fill="#3a4a5a" stroke="#4dabf7" stroke-width="2" rx="3"/>
+                    <text x="70" y="535" class="tiny-label" text-anchor="middle">PRIMARY OUT</text>
+
+                    <!-- Feedwater Inlet (secondary side) -->
+                    <rect x="115" y="300" width="35" height="18" fill="#3a4a5a" stroke="#4dabf7" stroke-width="2" rx="3"/>
+                    <text x="155" y="295" class="tiny-label" text-anchor="start">FEEDWATER</text>
+                </g>
+
+                <!-- ==================== DATA READOUTS ==================== -->
+
+                <!-- Steam Generator Readout Panel -->
+                <g class="readout-panel sg-readout" transform="translate(445, 600)">
+                    <rect x="0" y="0" width="200" height="165" fill="#0a1520" stroke="#2a4a5a" stroke-width="2" rx="5"/>
+                    <rect x="5" y="5" width="190" height="28" fill="#1a2a3a" rx="3"/>
+                    <text x="100" y="24" class="readout-title" text-anchor="middle">SG-1 PARAMETERS</text>
+
+                    <!-- Pressure -->
+                    <g transform="translate(10, 45)">
+                        <text x="0" y="14" class="readout-label">PRESSURE</text>
+                        <text x="180" y="14" class="readout-value" text-anchor="end" id="sgPressure">6.89</text>
+                        <text x="180" y="28" class="readout-unit" text-anchor="end">MPa</text>
+                    </g>
+
+                    <!-- Temperature -->
+                    <g transform="translate(10, 85)">
+                        <text x="0" y="14" class="readout-label">TEMPERATURE</text>
+                        <text x="180" y="14" class="readout-value" text-anchor="end" id="sgTemp">285</text>
+                        <text x="180" y="28" class="readout-unit" text-anchor="end">°C</text>
+                    </g>
+
+                    <!-- Flow Rate -->
+                    <g transform="translate(10, 125)">
+                        <text x="0" y="14" class="readout-label">FLOW RATE</text>
+                        <text x="180" y="14" class="readout-value" text-anchor="end" id="sgFlow">4,732</text>
+                        <text x="180" y="28" class="readout-unit" text-anchor="end">kg/s</text>
+                    </g>
+                </g>
+
+                <!-- Core Readout Panel -->
+                <g class="readout-panel core-readout" transform="translate(15, 320)">
+                    <rect x="0" y="0" width="200" height="200" fill="#0a1520" stroke="#2a4a5a" stroke-width="2" rx="5"/>
+                    <rect x="5" y="5" width="190" height="28" fill="#1a2a3a" rx="3"/>
+                    <text x="100" y="24" class="readout-title" text-anchor="middle">CORE PARAMETERS</text>
+
+                    <!-- Neutron Flux -->
+                    <g transform="translate(10, 45)">
+                        <text x="0" y="14" class="readout-label">NEUTRON FLUX</text>
+                        <text x="180" y="14" class="readout-value flux" text-anchor="end" id="neutronFlux">98.2</text>
+                        <text x="180" y="28" class="readout-unit" text-anchor="end">%</text>
+                    </g>
+
+                    <!-- Core Temp -->
+                    <g transform="translate(10, 85)">
+                        <text x="0" y="14" class="readout-label">AVG TEMP</text>
+                        <text x="180" y="14" class="readout-value" text-anchor="end" id="coreTemp">315</text>
+                        <text x="180" y="28" class="readout-unit" text-anchor="end">°C</text>
+                    </g>
+
+                    <!-- Control Rod Position -->
+                    <g transform="translate(10, 125)">
+                        <text x="0" y="14" class="readout-label">ROD POSITION</text>
+                        <text x="180" y="14" class="readout-value" text-anchor="end" id="rodPosition">225</text>
+                        <text x="180" y="28" class="readout-unit" text-anchor="end">steps</text>
+                    </g>
+
+                    <!-- Coolant Pressure -->
+                    <g transform="translate(10, 165)">
+                        <text x="0" y="14" class="readout-label">RCS PRESSURE</text>
+                        <text x="180" y="14" class="readout-value" text-anchor="end" id="rcsPressure">15.5</text>
+                        <text x="180" y="28" class="readout-unit" text-anchor="end">MPa</text>
+                    </g>
+                </g>
+
+                <!-- ==================== PRESSURIZER ==================== -->
+                <!-- Connected to hot leg via surge line - maintains system pressure -->
+                <g class="pressurizer" transform="translate(600, 60)">
+                    <text x="50" y="-10" class="component-label" text-anchor="middle">PRESSURIZER</text>
+
+                    <!-- Vessel -->
+                    <path d="M 20 20
+                             Q 20 0, 40 0
+                             L 60 0
+                             Q 80 0, 80 20
+                             L 80 160
+                             Q 80 180, 60 190
+                             L 40 190
+                             Q 20 180, 20 160
+                             Z"
+                          fill="url(#vesselGradient)"
+                          stroke="#5a7a8a"
+                          stroke-width="2"/>
+
+                    <!-- Steam Space -->
+                    <rect x="25" y="25" width="50" height="60" fill="#1a2a3a" opacity="0.8"/>
+                    <text x="50" y="58" class="tiny-label" text-anchor="middle" fill="#adb5bd">STEAM</text>
+
+                    <!-- Water Level -->
+                    <rect x="25" y="85" width="50" height="80" fill="#4dabf7" opacity="0.4"/>
+                    <text x="50" y="130" class="tiny-label" text-anchor="middle" fill="#74c0fc">WATER</text>
+
+                    <!-- Heaters -->
+                    <g class="heaters">
+                        <line x1="35" y1="110" x2="35" y2="165" stroke="#ff6b35" stroke-width="3" class="heater-element"/>
+                        <line x1="50" y1="110" x2="50" y2="165" stroke="#ff6b35" stroke-width="3" class="heater-element"/>
+                        <line x1="65" y1="110" x2="65" y2="165" stroke="#ff6b35" stroke-width="3" class="heater-element"/>
+                    </g>
+
+                    <!-- Spray Line (from cold leg) -->
+                    <line x1="50" y1="-10" x2="50" y2="25" stroke="#4dabf7" stroke-width="4"/>
+                    <text x="50" y="-15" class="tiny-label" text-anchor="middle">SPRAY</text>
+
+                    <!-- Surge Line Connection Point (bottom of pressurizer to hot leg) -->
+                    <circle cx="40" cy="170" r="6" fill="#ff8c42" stroke="#5a7a8a" stroke-width="1"/>
+
+                    <!-- Readout Panel -->
+                    <g transform="translate(90, 25)">
+                        <rect x="0" y="0" width="115" height="75" fill="#0a1520" stroke="#2a4a5a" stroke-width="1" rx="3"/>
+                        <text x="8" y="20" class="readout-label">LEVEL</text>
+                        <text x="105" y="20" class="readout-value" text-anchor="end" id="przrLevel">55</text>
+                        <text x="105" y="34" class="readout-unit" text-anchor="end">%</text>
+                        <text x="8" y="55" class="readout-label">PRESS</text>
+                        <text x="105" y="55" class="readout-value" text-anchor="end" id="przrPressure">15.5</text>
+                        <text x="105" y="69" class="readout-unit" text-anchor="end">MPa</text>
+                    </g>
+                </g>
+
+                <!-- ==================== SECONDARY LOOP (TURBINE SIDE) ==================== -->
+                <g class="secondary-loop">
+                    <!-- Main Steam Line (from SG to Turbine) -->
+                    <g class="main-steam-line">
+                        <path d="M 530 50
+                                 L 530 30
+                                 Q 530 15, 550 15
+                                 L 900 15
+                                 Q 920 15, 920 35
+                                 L 920 80"
+                              fill="none" stroke="url(#steamGradient)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Flow indicator -->
+                        <path d="M 530 50 L 530 30 Q 530 15, 550 15 L 900 15 Q 920 15, 920 35 L 920 80"
+                              fill="none" stroke="#dee2e6" stroke-width="2" stroke-dasharray="8,4" class="flow-indicator" style="animation: flowDash 0.6s linear infinite;"/>
+                        <!-- Flow arrow -->
+                        <polygon points="780,5 795,15 780,25" fill="#fff" opacity="0.8"/>
+                        <text x="800" y="8" class="tiny-label" text-anchor="start">MAIN STEAM</text>
+                    </g>
+
+                    <!-- TURBINE -->
+                    <g class="turbine" transform="translate(850, 90)">
+                        <text x="70" y="-5" class="component-label" text-anchor="middle">HP TURBINE</text>
+
+                        <!-- Turbine Casing -->
+                        <path d="M 0 40
+                                 L 20 0
+                                 L 120 0
+                                 L 140 40
+                                 L 140 100
+                                 L 120 140
+                                 L 20 140
+                                 L 0 100
+                                 Z"
+                              fill="#3a4a5a" stroke="#5a7a8a" stroke-width="2"/>
+
+                        <!-- Turbine Blades (stylized) -->
+                        <g class="turbine-rotor" id="turbineRotor">
+                            <circle cx="70" cy="70" r="45" fill="#2a3a4a" stroke="#4a6a7a" stroke-width="2"/>
+                            <circle cx="70" cy="70" r="8" fill="#5a7a8a"/>
+                            <!-- Blade rows -->
+                            <line x1="70" y1="25" x2="70" y2="45" stroke="#6a8a9a" stroke-width="4"/>
+                            <line x1="70" y1="95" x2="70" y2="115" stroke="#6a8a9a" stroke-width="4"/>
+                            <line x1="25" y1="70" x2="45" y2="70" stroke="#6a8a9a" stroke-width="4"/>
+                            <line x1="95" y1="70" x2="115" y2="70" stroke="#6a8a9a" stroke-width="4"/>
+                            <line x1="38" y1="38" x2="52" y2="52" stroke="#6a8a9a" stroke-width="4"/>
+                            <line x1="88" y1="88" x2="102" y2="102" stroke="#6a8a9a" stroke-width="4"/>
+                            <line x1="88" y1="38" x2="102" y2="52" stroke="#6a8a9a" stroke-width="4"/>
+                            <line x1="38" y1="88" x2="52" y2="102" stroke="#6a8a9a" stroke-width="4"/>
+                        </g>
+
+                        <!-- Steam inlet -->
+                        <rect x="60" y="-15" width="20" height="20" fill="#4a5a6a" stroke="#adb5bd" stroke-width="2" rx="2"/>
+
+                        <!-- Exhaust outlet (to condenser) -->
+                        <rect x="60" y="135" width="20" height="20" fill="#4a5a6a" stroke="#868e96" stroke-width="2" rx="2"/>
+                    </g>
+
+                    <!-- GENERATOR -->
+                    <g class="generator" transform="translate(1010, 105)">
+                        <text x="45" y="-5" class="component-label" text-anchor="middle">GENERATOR</text>
+
+                        <!-- Generator Housing -->
+                        <rect x="0" y="0" width="90" height="110" fill="#3a4a5a" stroke="#5a7a8a" stroke-width="2" rx="5"/>
+
+                        <!-- Rotor visualization -->
+                        <circle cx="45" cy="55" r="35" fill="#2a3a4a" stroke="#4a6a7a" stroke-width="2"/>
+                        <circle cx="45" cy="55" r="20" fill="#1a2a3a" stroke="#3a5a6a" stroke-width="1"/>
+
+                        <!-- Electrical symbol -->
+                        <text x="45" y="62" class="zone-label" text-anchor="middle" fill="#ffd43b">~</text>
+
+                        <!-- Shaft connection to turbine -->
+                        <rect x="-20" y="45" width="25" height="20" fill="#4a5a6a" stroke="#5a7a8a" stroke-width="1"/>
+
+                        <!-- Power output lines -->
+                        <line x1="90" y1="35" x2="110" y2="35" stroke="#ffd43b" stroke-width="3"/>
+                        <line x1="90" y1="55" x2="110" y2="55" stroke="#ffd43b" stroke-width="3"/>
+                        <line x1="90" y1="75" x2="110" y2="75" stroke="#ffd43b" stroke-width="3"/>
+                        <text x="115" y="58" class="tiny-label" text-anchor="start" fill="#ffd43b">TO GRID</text>
+                    </g>
+
+                    <!-- Exhaust Steam Line (Turbine to Condenser) -->
+                    <g class="exhaust-steam">
+                        <path d="M 920 245
+                                 L 920 320"
+                              fill="none" stroke="#adb5bd" stroke-width="20" stroke-linecap="round" opacity="0.6"/>
+                        <text x="940" y="285" class="tiny-label" text-anchor="start">EXHAUST</text>
+                    </g>
+
+                    <!-- CONDENSER -->
+                    <g class="condenser" transform="translate(830, 340)">
+                        <text x="90" y="-10" class="component-label" text-anchor="middle">CONDENSER</text>
+
+                        <!-- Condenser Shell -->
+                        <rect x="0" y="0" width="180" height="120" fill="#2a3a4a" stroke="#5a7a8a" stroke-width="2" rx="5"/>
+
+                        <!-- Tube bundle representation -->
+                        <g class="condenser-tubes" opacity="0.6">
+                            <line x1="20" y1="30" x2="160" y2="30" stroke="#4dabf7" stroke-width="2"/>
+                            <line x1="20" y1="45" x2="160" y2="45" stroke="#4dabf7" stroke-width="2"/>
+                            <line x1="20" y1="60" x2="160" y2="60" stroke="#4dabf7" stroke-width="2"/>
+                            <line x1="20" y1="75" x2="160" y2="75" stroke="#4dabf7" stroke-width="2"/>
+                            <line x1="20" y1="90" x2="160" y2="90" stroke="#4dabf7" stroke-width="2"/>
+                        </g>
+
+                        <!-- Steam inlet (top) -->
+                        <rect x="80" y="-15" width="20" height="20" fill="#4a5a6a" stroke="#868e96" stroke-width="1" rx="2"/>
+
+                        <!-- Cooling water in/out -->
+                        <rect x="-15" y="40" width="20" height="15" fill="#3a4a5a" stroke="#4dabf7" stroke-width="2" rx="2"/>
+                        <text x="-25" y="65" class="tiny-label" text-anchor="middle">CW IN</text>
+
+                        <rect x="175" y="40" width="20" height="15" fill="#3a4a5a" stroke="#ff8c42" stroke-width="2" rx="2"/>
+                        <text x="205" y="65" class="tiny-label" text-anchor="middle">CW OUT</text>
+
+                        <!-- Hotwell (condensate collection) -->
+                        <rect x="60" y="100" width="60" height="25" fill="#4dabf7" opacity="0.3" stroke="#4a6a7a" stroke-width="1"/>
+                        <text x="90" y="118" class="tiny-label" text-anchor="middle">HOTWELL</text>
+
+                        <!-- Condensate outlet -->
+                        <rect x="80" y="120" width="20" height="15" fill="#3a4a5a" stroke="#4dabf7" stroke-width="2" rx="2"/>
+                    </g>
+
+                    <!-- CONDENSATE/FEEDWATER PUMP -->
+                    <g class="feedwater-pump" transform="translate(880, 510)">
+                        <circle cx="30" cy="25" r="28" fill="#2a3a4a" stroke="#5a7a8a" stroke-width="2"/>
+                        <circle cx="30" cy="25" r="18" fill="#1a2a3a" stroke="#4a6a7a" stroke-width="1"/>
+                        <!-- Pump symbol -->
+                        <polygon points="30,12 40,30 20,30" fill="#6a8a9a"/>
+                        <text x="30" y="65" class="small-label" text-anchor="middle">FW PUMP</text>
+                    </g>
+
+                    <!-- Feedwater Line (Condenser to SG) -->
+                    <g class="feedwater-line">
+                        <!-- From condenser hotwell straight down to pump -->
+                        <path d="M 910 475
+                                 L 910 505"
+                              fill="none" stroke="url(#coldWaterGradient)" stroke-width="12" stroke-linecap="round"/>
+
+                        <!-- From pump back to SG feedwater inlet -->
+                        <path d="M 910 565
+                                 L 910 600
+                                 Q 910 620, 890 620
+                                 L 620 620
+                                 Q 600 620, 600 600
+                                 L 600 400
+                                 L 615 400"
+                              fill="none" stroke="url(#coldWaterGradient)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+
+                        <!-- Flow indicator -->
+                        <path d="M 910 565 L 910 600 Q 910 620, 890 620 L 620 620 Q 600 620, 600 600 L 600 400 L 615 400"
+                              fill="none" stroke="#74c0fc" stroke-width="2" stroke-dasharray="8,4" class="flow-indicator cold-flow"/>
+
+                        <!-- Flow arrow -->
+                        <polygon points="750,610 750,630 735,620" fill="#fff" opacity="0.8"/>
+                        <text x="750" y="640" class="tiny-label" text-anchor="middle">FEEDWATER</text>
+                    </g>
+                </g>
+
+                <!-- ==================== LEGEND ==================== -->
+                <g class="legend" transform="translate(1150, 420)">
+                    <rect x="0" y="0" width="160" height="165" fill="#0a1520" stroke="#2a4a5a" stroke-width="1" rx="5"/>
+                    <text x="80" y="20" class="readout-title" text-anchor="middle">LEGEND</text>
+
+                    <rect x="12" y="35" width="25" height="8" fill="url(#hotWaterGradient)"/>
+                    <text x="45" y="43" class="legend-text">Hot Coolant</text>
+
+                    <rect x="12" y="52" width="25" height="8" fill="url(#coldWaterGradient)"/>
+                    <text x="45" y="60" class="legend-text">Cold Coolant</text>
+
+                    <rect x="12" y="69" width="25" height="8" fill="url(#steamGradient)"/>
+                    <text x="45" y="77" class="legend-text">Steam</text>
+
+                    <rect x="12" y="86" width="25" height="8" fill="url(#fuelGradient)"/>
+                    <text x="45" y="94" class="legend-text">Fuel Assemblies</text>
+
+                    <rect x="12" y="103" width="25" height="8" fill="#1a1a2e" stroke="#4a5a6a"/>
+                    <text x="45" y="111" class="legend-text">Control Rods</text>
+
+                    <line x1="12" y1="127" x2="37" y2="127" stroke="#ff6b35" stroke-width="3"/>
+                    <text x="45" y="131" class="legend-text">Heaters</text>
+
+                    <line x1="12" y1="147" x2="37" y2="147" stroke="#ffd43b" stroke-width="3"/>
+                    <text x="45" y="151" class="legend-text">Electrical</text>
+                </g>
+
+                <!-- ==================== TURBINE/GENERATOR READOUT ==================== -->
+                <g class="secondary-indicator" transform="translate(1050, 250)">
+                    <rect x="0" y="0" width="180" height="165" fill="#0a1520" stroke="#3a5a6a" stroke-width="2" rx="5"/>
+                    <rect x="5" y="5" width="170" height="28" fill="#1a3a4a" rx="3"/>
+                    <text x="90" y="24" class="readout-title" text-anchor="middle">TURBINE-GEN</text>
+
+                    <g transform="translate(10, 45)">
+                        <text x="0" y="14" class="readout-label">STEAM FLOW</text>
+                        <text x="160" y="14" class="readout-value" text-anchor="end" id="steamFlow">1,580</text>
+                        <text x="160" y="28" class="readout-unit" text-anchor="end">kg/s</text>
+                    </g>
+
+                    <g transform="translate(10, 85)">
+                        <text x="0" y="14" class="readout-label">ELEC OUTPUT</text>
+                        <text x="160" y="14" class="readout-value" text-anchor="end" id="turbinePower" style="fill: #ffd43b;">950</text>
+                        <text x="160" y="28" class="readout-unit" text-anchor="end">MWe</text>
+                    </g>
+
+                    <g transform="translate(10, 125)">
+                        <text x="0" y="14" class="readout-label">COND VAC</text>
+                        <text x="160" y="14" class="readout-value" text-anchor="end" id="condenserVac">-95</text>
+                        <text x="160" y="28" class="readout-unit" text-anchor="end">kPa</text>
+                    </g>
+                </g>
+            </svg>
+
+            <!-- Control Rod Slider -->
+            <div class="rod-control-panel">
+                <div class="panel-header">
+                    <span class="panel-title">CONTROL ROD DRIVE</span>
+                    <div class="panel-status" id="rodStatus">AUTO</div>
+                </div>
+                <div class="slider-container">
+                    <div class="slider-labels">
+                        <span>FULL IN</span>
+                        <span>FULL OUT</span>
+                    </div>
+                    <input type="range" id="rodSlider" min="0" max="228" value="225" class="rod-slider">
+                    <div class="slider-value"><span id="rodSliderValue">225</span> STEPS</div>
+                </div>
+                <div class="rod-buttons">
+                    <button class="rod-btn insert" id="rodInsert">▼ INSERT</button>
+                    <button class="rod-btn withdraw" id="rodWithdraw">▲ WITHDRAW</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Graphs Panel -->
+        <aside class="graphs-panel" id="graphsPanel">
+            <div class="graphs-header">
+                <span class="graphs-title">REAL-TIME TRENDS</span>
+                <button class="graphs-toggle" id="graphsToggle" title="Toggle Graphs">
+                    <span class="toggle-icon">◀</span>
+                </button>
+            </div>
+            <div class="graphs-content">
+                <div class="chart-container">
+                    <div class="chart-title">POWER & TEMPERATURE</div>
+                    <canvas id="chartPowerTemp"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">ROD POSITION & FLUX</div>
+                    <canvas id="chartRodFlux"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">SYSTEM PRESSURES</div>
+                    <canvas id="chartPressures"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">POWER vs TEMP (FEEDBACK)</div>
+                    <canvas id="chartFeedback"></canvas>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Footer Status Bar -->
+        <footer class="status-bar">
+            <div class="status-item">
+                <span class="status-label">PRIMARY LOOP</span>
+                <span class="status-value ok">NOMINAL</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">SECONDARY LOOP</span>
+                <span class="status-value ok">NOMINAL</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">SAFETY SYSTEMS</span>
+                <span class="status-value ok">STANDBY</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">RADIATION</span>
+                <span class="status-value ok">NORMAL</span>
+            </div>
+            <div class="status-item emergency">
+                <button class="scram-btn" id="scramBtn">⚠ SCRAM</button>
+            </div>
+        </footer>
+    </div>
+
+    <script src="physics.js"></script>
+    <script src="simulator.js"></script>
+</body>
+</html>
