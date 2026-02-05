@@ -188,11 +188,11 @@
                     <text x="100" y="490" class="tiny-label" text-anchor="middle">LOWER PLENUM</text>
 
                     <!-- Inlet/Outlet Nozzles - Both above core level for safety -->
-                    <rect x="165" y="100" width="40" height="25" fill="#3a4a5a" stroke="#ff8c42" stroke-width="2" rx="3"/>
-                    <text x="185" y="90" class="tiny-label" text-anchor="middle">HOT LEG</text>
+                    <rect x="165" y="100" width="40" height="25" fill="#3a4a5a" stroke="#4dabf7" stroke-width="2" rx="3"/>
+                    <text x="185" y="90" class="tiny-label" text-anchor="middle">COLD LEG</text>
 
-                    <rect x="165" y="140" width="40" height="25" fill="#3a4a5a" stroke="#4dabf7" stroke-width="2" rx="3"/>
-                    <text x="185" y="180" class="tiny-label" text-anchor="middle">COLD LEG</text>
+                    <rect x="165" y="140" width="40" height="25" fill="#3a4a5a" stroke="#ff8c42" stroke-width="2" rx="3"/>
+                    <text x="185" y="180" class="tiny-label" text-anchor="middle">HOT LEG</text>
                 </g>
 
                 <!-- ==================== PRIMARY LOOP PIPING ==================== -->
@@ -200,28 +200,28 @@
                     <!-- Hot Leg (from reactor to steam generator inlet) -->
                     <g class="hot-leg">
                         <!-- Main hot leg pipe: reactor outlet to SG inlet -->
-                        <path d="M 355 232
-                                 L 420 232
-                                 Q 440 232, 440 252
+                        <path d="M 355 272
+                                 L 420 272
+                                 Q 440 272, 440 292
                                  L 440 295
                                  Q 440 315, 460 315
                                  L 480 315"
                               fill="none" stroke="url(#hotWaterGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
                         <!-- Flow indicator -->
-                        <path d="M 355 232 L 420 232 Q 440 232, 440 252 L 440 295 Q 440 315, 460 315 L 480 315"
+                        <path d="M 355 272 L 420 272 Q 440 272, 440 292 L 440 295 Q 440 315, 460 315 L 480 315"
                               fill="none" stroke="#ff8c42" stroke-width="2" stroke-dasharray="10,5" class="flow-indicator hot-flow"/>
                         <!-- Flow direction arrow -->
-                        <polygon points="390,222 405,232 390,242" fill="#fff" opacity="0.8"/>
+                        <polygon points="390,262 405,272 390,282" fill="#fff" opacity="0.8"/>
                     </g>
 
                     <!-- Pressurizer Surge Line (connects to hot leg) -->
                     <g class="surge-line">
-                        <path d="M 440 270
-                                 L 620 270
-                                 Q 640 270, 640 250
+                        <path d="M 440 290
+                                 L 620 290
+                                 Q 640 290, 640 260
                                  L 640 230"
                               fill="none" stroke="url(#hotWaterGradient)" stroke-width="12" stroke-linecap="round"/>
-                        <text x="530" y="260" class="tiny-label" text-anchor="middle">SURGE LINE</text>
+                        <text x="530" y="280" class="tiny-label" text-anchor="middle">SURGE LINE</text>
                     </g>
 
                     <!-- Cold Leg (from SG outlet through RCP back to reactor) -->
@@ -240,14 +240,14 @@
 
                         <!-- Pump to reactor - routed OUTSIDE the reactor vessel on the right side -->
                         <path d="M 340 640
-                                 L 340 280
-                                 Q 340 260, 355 260"
+                                 L 340 250
+                                 Q 340 232, 355 232"
                               fill="none" stroke="url(#coldWaterGradient)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
 
                         <!-- Flow indicators -->
                         <path d="M 530 580 L 530 620 Q 530 640, 510 640 L 400 640"
                               fill="none" stroke="#74c0fc" stroke-width="2" stroke-dasharray="10,5" class="flow-indicator cold-flow"/>
-                        <path d="M 340 640 L 340 280 Q 340 260, 355 260"
+                        <path d="M 340 640 L 340 250 Q 340 232, 355 232"
                               fill="none" stroke="#74c0fc" stroke-width="2" stroke-dasharray="10,5" class="flow-indicator cold-flow"/>
 
                         <!-- Flow direction arrows -->
